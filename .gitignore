@@ -1,0 +1,5 @@
+# Judge0 Git Ignore
+.env
+*.log
+data/
+tmp/
