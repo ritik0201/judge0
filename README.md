@@ -1,22 +1,15 @@
 # Self-Hosted Judge0 Code Execution System
 
-Production-ready, self-hosted deployment of **Judge0 Community Edition (v1.13.1)** for the DevLab code execution platform.
+Production-ready, self-hosted deployment of **Judge0 Community Edition (v1.13.1)**.
 
 ---
 
 ## 1. Architecture
 
 ```
-Frontend Code Editor (Monaco Editor)
+Frontend Code Editor / Web Client / API Consumers
         │
-        ▼ (HTTPS REST / JSON)
-DevLab FastAPI Backend (/api/code/*)
-        │   • JWT Session Authentication
-        │   • Request Validation & Size Bounds
-        │   • Sliding-Window Rate Limiting
-        │   • Submission Persistence (SQLAlchemy)
-        │
-        ▼ (Internal Loopback / Private Network)
+        ▼ (HTTP REST / JSON)
 Judge0 API Server (http://127.0.0.1:2358)
         │
         ▼ (Jobs Queue & Results)
@@ -73,8 +66,8 @@ judge0/
 
 A dedicated, elegant standalone web frontend is included in `judge0/frontend` specifically designed for Judge0 code execution with a **Light Color Mood / Theme**:
 - **Light Aesthetic**: Crisp porcelain canvas (`#f8fafc`), elevated white cards, slate typography, and VS Light Monaco code editor.
-- **Port 5174**: Guaranteed non-conflicting port (so it never collides with `rg-consultancy` on 5173 or `devlab` on 3000).
-- **Dual-Path Execution Engine**: Communicates with the DevLab FastAPI backend (`http://127.0.0.1:8000/api/code/run`) or directly with Judge0 CE (`http://127.0.0.1:2358`) with automatic fallback and base64 UTF-8 handling.
+- **Port 5174**: Dedicated standalone port (defaulting to 5174 so it avoids conflicts with standard web services).
+- **Direct Execution Engine**: Communicates directly with Judge0 CE (`http://127.0.0.1:2358/submissions`) with base64 UTF-8 encoding and synchronized/asynchronous submission handling.
 - **Languages**: C++ (GCC 9.2.0), Java (OpenJDK 13), Python 3 (3.8.1), and JavaScript (Node.js 12.14).
 - **Interactive Workspaces**:
   - Live code editor with font size zoom, reset, and copy

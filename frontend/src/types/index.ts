@@ -36,7 +36,7 @@ export interface TestCase {
 
 export interface BackendStatus {
   isOnline: boolean;
-  provider: 'devlab' | 'judge0_direct' | 'offline';
+  provider: 'judge0' | 'offline';
   latencyMs?: number;
   details?: string;
 }

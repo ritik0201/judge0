@@ -1,7 +1,6 @@
 import { BackendStatus, ExecutionResult } from '../types';
 
-const DEVLAB_API_URL = 'http://127.0.0.1:8000';
-const JUDGE0_DIRECT_URL = 'http://127.0.0.1:2358';
+const JUDGE0_URL = import.meta.env.VITE_JUDGE0_URL || 'http://127.0.0.1:2358';
 
 /**
  * Safely encode UTF-8 string to base64
@@ -31,53 +30,36 @@ export function fromBase64(str: string | null | undefined): string {
 }
 
 /**
- * Health check targeting DevLab backend first, then Judge0 direct
+ * Health check targeting Judge0 directly
  */
 export async function checkBackendHealth(): Promise<BackendStatus> {
   const startTime = performance.now();
 
-  // Try DevLab backend
   try {
-    const res = await fetch(`${DEVLAB_API_URL}/api/health`, { method: 'GET', signal: AbortSignal.timeout(2000) });
-    if (res.ok) {
-      const latency = Math.round(performance.now() - startTime);
-      return {
-        isOnline: true,
-        provider: 'devlab',
-        latencyMs: latency,
-        details: 'Connected to DevLab Proxy (Port 8000)'
-      };
-    }
-  } catch {
-    // Continue to Judge0 fallback
-  }
-
-  // Try direct Judge0
-  try {
-    const res = await fetch(`${JUDGE0_DIRECT_URL}/about`, { method: 'GET', signal: AbortSignal.timeout(2500) });
+    const res = await fetch(`${JUDGE0_URL}/about`, { method: 'GET', signal: AbortSignal.timeout(2500) });
     if (res.ok) {
       const data = await res.json();
       const latency = Math.round(performance.now() - startTime);
       return {
         isOnline: true,
-        provider: 'judge0_direct',
+        provider: 'judge0',
         latencyMs: latency,
-        details: `Connected to Judge0 CE ${data.version || 'Direct'} (Port 2358)`
+        details: `Connected to Judge0 CE ${data.version || 'v1.13.1'} (Port 2358)`
       };
     }
   } catch {
-    // Both failed
+    // Offline
   }
 
   return {
     isOnline: false,
     provider: 'offline',
-    details: 'Backend offline. Run Judge0 docker compose or DevLab server.'
+    details: 'Judge0 is offline. Start containers with docker compose or .\\scripts\\start.ps1.'
   };
 }
 
 /**
- * Execute code via DevLab backend or directly via Judge0
+ * Execute code directly via Judge0 API
  */
 export async function executeCode(
   judge0LanguageId: number,
@@ -85,41 +67,6 @@ export async function executeCode(
   stdin: string = '',
   expectedOutput?: string
 ): Promise<ExecutionResult> {
-  // First attempt: DevLab backend
-  try {
-    const devLabRes = await fetch(`${DEVLAB_API_URL}/api/code/run`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        languageId: judge0LanguageId,
-        sourceCode,
-        stdin,
-        expectedOutput: expectedOutput || undefined,
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
-
-    if (devLabRes.ok) {
-      const data = await devLabRes.json();
-      return {
-        stdout: data.stdout || null,
-        stderr: data.stderr || null,
-        compile_output: data.compile_output || null,
-        message: data.message || null,
-        time: data.time || null,
-        memory: data.memory || null,
-        exit_code: data.exit_code ?? null,
-        status: {
-          id: data.status?.id || (data.exit_code === 0 ? 3 : 11),
-          description: data.status?.description || 'Executed successfully',
-        },
-      };
-    }
-  } catch {
-    // Fall back to direct Judge0 call
-  }
-
-  // Direct Judge0 call with base64 payload
   const payload = {
     source_code: toBase64(sourceCode),
     language_id: judge0LanguageId,
@@ -133,7 +80,7 @@ export async function executeCode(
     enable_per_process_and_thread_memory_limit: true,
   };
 
-  const response = await fetch(`${JUDGE0_DIRECT_URL}/submissions?wait=true&base64_encoded=true`, {
+  const response = await fetch(`${JUDGE0_URL}/submissions?wait=true&base64_encoded=true`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

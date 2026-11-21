@@ -119,8 +119,8 @@ export const Header: React.FC<HeaderProps> = ({
           />
           <span>
             {backendStatus.isOnline 
-              ? `${backendStatus.provider === 'devlab' ? 'DevLab Proxy' : 'Judge0 Direct'} (${backendStatus.latencyMs}ms)`
-              : 'Backend Offline'}
+              ? `Judge0 (${backendStatus.latencyMs}ms)`
+              : 'Judge0 Offline'}
           </span>
         </div>
 
